@@ -6,3 +6,5 @@ const userSchema = new mongoose.Schema({
   mobile: { type: "number", required: true, unique: true },
   password: { type: "string", required: true },
 });
+
+module.exports = mongoose.model("User", userSchema);
