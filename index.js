@@ -149,7 +149,7 @@ app.post("/api/jobpost", isAuthenticated, async (req, res) => {
   }
 });
 
-app.put('/api/jobpost/:id', isAuthenticated, async (req, res) => {
+app.put('/api/editjobpost/:id', isAuthenticated, async (req, res) => {
   try {
     const jobId = req.params.id;
     const { jobPosition, monthlySalary, jobType, remoteOffice, location, jobDescription, skillsRequired, additionalInfo } = req.body;
@@ -175,7 +175,7 @@ app.put('/api/jobpost/:id', isAuthenticated, async (req, res) => {
   }
 });
 
-app.get('/api/jobpost/:id', async (req, res) => {
+app.get('/api/showjobpost/:id', async (req, res) => {
   try {
     const jobId = req.params.id;
 
@@ -188,6 +188,32 @@ app.get('/api/jobpost/:id', async (req, res) => {
     res.status(200).json({ jobPost });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching job post details', error });
+  }
+});
+
+app.get('/api/list-jobs', async (req, res) => {
+  try {
+    const { skills, jobTitle } = req.query;
+
+    let query = {};
+
+    if (skills) {
+      query.skillsRequired = { $regex: new RegExp(skills, 'i') };
+    }
+
+    if (jobTitle) {
+      query.jobPosition = { $regex: new RegExp(jobTitle, 'i') };
+    }
+
+    const jobPosts = await Job.find(query);
+
+    if (jobPosts.length === 0) {
+      return res.status(404).json({ message: 'No matching job posts found' });
+    }
+
+    res.status(200).json({ jobPosts });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching job posts', error });
   }
 });
 
