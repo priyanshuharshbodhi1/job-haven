@@ -19,11 +19,13 @@ app.use(express.static("./public"));
 
 app.set("view engine", "ejs");
 
-// --------------------------------------------------------------------------------------------------------------
+// -------------------------------------------jwt token middlewares-------------------------------------------------------------------
 
 const isAuthenticated = (req, res, next) => {
   try {
-    const user = jwt.verify(req.headers.token, process.env.JWT_SECRET);
+    const token = req.headers.authorization.split(" ")[1]; // Extract token from "Bearer <token>"
+    const user = jwt.verify(token, "iamthetoken");
+
     req.user = user;
     next();
   } catch (error) {
@@ -55,7 +57,7 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
-app.get("/jobpost", (req, res) => {
+app.get("/jobpost", isAuthenticated, (req, res) => {
   res.render("jobpost");
 });
 
@@ -97,27 +99,6 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-// app.post("/api/login", async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     const user = await User.findOne({ email });
-//     if (user) {
-//       const isPasswordCorrect = await bcrypt.compare(password, user.password);
-//       if (isPasswordCorrect) {
-//         const token = jwt.sign(user.toJSON(), "iamtheJWTsecret", {
-//           expiresIn: "1h",
-//         });
-//         res.json({ message: "token generated" });
-//       }
-//     } else {
-//       // res.json({ message: "password incorrect" });
-//       res.json({ message: "User doesn't exists" });
-//     }
-//   } catch (error) {
-//     res.json({ message: "error" });
-//   }
-// });
-
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -126,8 +107,12 @@ app.post("/api/login", async (req, res) => {
       const passwordMatched = await bcrypt.compare(password, user.password);
       if (passwordMatched) {
         const jwToken = jwt.sign(user.toJSON(), "iamthetoken", {
-          expiresIn: 60,
+          expiresIn: 6000,
         });
+        // Set the Authorization header with the JWT token
+        res.setHeader("Authorization", `Bearer ${jwToken}`);
+        // console.log(jwToken)
+
         res.json({
           status: "SUCCESS",
           message: "You've logged in successfully",
@@ -154,7 +139,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.post("/api/jobpost", async (req, res) => {
+app.post("/api/jobpost", isAuthenticated, async (req, res) => {
   try {
     const newJob = new Job(req.body);
     await newJob.save();
@@ -163,6 +148,50 @@ app.post("/api/jobpost", async (req, res) => {
     res.status(500).json({ message: "Error creating job listing", error });
   }
 });
+
+app.put('/api/jobpost/:id', isAuthenticated, async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const { jobPosition, monthlySalary, jobType, remoteOffice, location, jobDescription, skillsRequired, additionalInfo } = req.body;
+
+    const jobPost = await Job.findByIdAndUpdate(jobId, {
+      jobPosition,
+      monthlySalary,
+      jobType,
+      remoteOffice,
+      location,
+      jobDescription,
+      skillsRequired,
+      additionalInfo,
+    });
+
+    if (!jobPost) {
+      return res.status(404).json({ message: 'Job post not found' });
+    }
+
+    res.status(200).json({ message: 'Job post updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating job post', error });
+  }
+});
+
+app.get('/api/jobpost/:id', async (req, res) => {
+  try {
+    const jobId = req.params.id;
+
+    const jobPost = await Job.findById(jobId);
+
+    if (!jobPost) {
+      return res.status(404).json({ message: 'Job post not found' });
+    }
+
+    res.status(200).json({ jobPost });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching job post details', error });
+  }
+});
+
+
 
 // --------------------------------------------------------------------------------------------------------------
 
