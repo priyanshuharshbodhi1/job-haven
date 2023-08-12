@@ -18,6 +18,8 @@ app.use(express.static("./public"));
 
 app.set("view engine", "ejs");
 
+// --------------------------------------------------------------------------------------------------------------
+
 const isAuthenticated = (req, res, next) => {
   try {
     const user = jwt.verify(req.headers.token, process.env.JWT_SECRET)
@@ -42,6 +44,8 @@ const isAdmin = (req, res, next) => {
     })
   }
 }
+// ------------------------------view rendering--------------------------------------------- //
+
 
 app.get("/signup", (req, res) => {
   res.render("signup");
@@ -49,6 +53,10 @@ app.get("/signup", (req, res) => {
 
 app.get("/login", (req, res) => {
   res.render("login");
+});
+
+app.get("/jobpost", (req, res) => {
+  res.render("jobpost");
 });
 
 app.get("/health", async (req, res) => {
@@ -61,6 +69,9 @@ app.get("/health", async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------------------------------- //
+
+
+
 // const signupRoutes = require('./routes/auth');
 // app.use('/api', signupRoutes); // Mount the signup routes at '/api'
 
@@ -145,6 +156,9 @@ app.post('/api/login', async (req, res) => {
     })
   }
 })
+
+
+// --------------------------------------------------------------------------------------------------------------
 
 app.listen(3000, () => {
   mongoose
