@@ -7,11 +7,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const router = require("./routes/auth.js");
 
-require("dotenv").config();
+// require("dotenv").config();
 
 const app = express();
 
 const User = require("./models/user.js");
+const Job = require("./models/jobpost.js");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("./public"));
@@ -22,30 +23,29 @@ app.set("view engine", "ejs");
 
 const isAuthenticated = (req, res, next) => {
   try {
-    const user = jwt.verify(req.headers.token, process.env.JWT_SECRET)
-    req.user = user
-    next()
+    const user = jwt.verify(req.headers.token, process.env.JWT_SECRET);
+    req.user = user;
+    next();
   } catch (error) {
     res.json({
-      status: 'FAIL',
-      message: 'Please login first!'
-    })
+      status: "FAIL",
+      message: "Please login first!",
+    });
   }
-}
+};
 
 const isAdmin = (req, res, next) => {
-  console.log(req.user)
-  if(req.user.isAdmin) {
-    next()
+  console.log(req.user);
+  if (req.user.isAdmin) {
+    next();
   } else {
     res.json({
-      status: 'FAIL',
-      message: "You're not allowed to access this page"
-    })
+      status: "FAIL",
+      message: "You're not allowed to access this page",
+    });
   }
-}
+};
 // ------------------------------view rendering--------------------------------------------- //
-
 
 app.get("/signup", (req, res) => {
   res.render("signup");
@@ -70,8 +70,6 @@ app.get("/health", async (req, res) => {
 
 // ---------------------------------------------------------------------------------------------------- //
 
-
-
 // const signupRoutes = require('./routes/auth');
 // app.use('/api', signupRoutes); // Mount the signup routes at '/api'
 
@@ -79,9 +77,6 @@ app.post("/api/signup", async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create a new user using the User model
-    // const newUser = new User({ firstName, lastName, email, password: hashedPassword });
 
     let user = await User.findOne({ email });
     if (user) {
@@ -98,7 +93,7 @@ app.post("/api/signup", async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "An error occurred" });
+    res.status(500).json({ message: "An error occurred", error });
   }
 });
 
@@ -123,40 +118,51 @@ app.post("/api/signup", async (req, res) => {
 //   }
 // });
 
-app.post('/api/login', async (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
-    const { email, password } = req.body
-    const user = await User.findOne({ email })
-    if(user) {
-      const passwordMatched = await bcrypt.compare(password, user.password)
-      if(passwordMatched) {
-        const jwToken = jwt.sign(user.toJSON(), "iamthetoken", { expiresIn: 60 })
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (user) {
+      const passwordMatched = await bcrypt.compare(password, user.password);
+      if (passwordMatched) {
+        const jwToken = jwt.sign(user.toJSON(), "iamthetoken", {
+          expiresIn: 60,
+        });
         res.json({
-          status: 'SUCCESS',
+          status: "SUCCESS",
           message: "You've logged in successfully",
           // jwToken
-        })
+        });
       } else {
-      res.json({
-        status: 'FAIL',
-        message: 'Incorrect password'
-      })
-    }
+        res.json({
+          status: "FAIL",
+          message: "Incorrect password",
+        });
+      }
     } else {
       res.json({
-        status: 'FAIL',
-        message: 'User does not exist'
-      })
+        status: "FAIL",
+        message: "User does not exist",
+      });
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.json({
-      status: 'FAIL',
-      message: 'Something went wrong'
-    })
+      status: "FAIL",
+      message: "Something went wrong",
+    });
   }
-})
+});
 
+app.post("/api/jobpost", async (req, res) => {
+  try {
+    const newJob = new Job(req.body);
+    await newJob.save();
+    res.status(201).json({ message: "Job listing created successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error creating job listing", error });
+  }
+});
 
 // --------------------------------------------------------------------------------------------------------------
 
