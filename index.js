@@ -6,7 +6,6 @@ const ejs = require("ejs");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const router = require("./routes/auth.js");
-
 require("dotenv").config();
 
 const app = express();
@@ -70,7 +69,7 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// ---------------------------------------------------------------------------------------------------- //
+// APIs ---------------------------------------------------------------------------------------------------- //
 
 // const signupRoutes = require('./routes/auth');
 // app.use('/api', signupRoutes); // Mount the signup routes at '/api'
@@ -149,10 +148,19 @@ app.post("/api/jobpost", isAuthenticated, async (req, res) => {
   }
 });
 
-app.put('/api/editjobpost/:id', isAuthenticated, async (req, res) => {
+app.put("/api/editjobpost/:id", isAuthenticated, async (req, res) => {
   try {
     const jobId = req.params.id;
-    const { jobPosition, monthlySalary, jobType, remoteOffice, location, jobDescription, skillsRequired, additionalInfo } = req.body;
+    const {
+      jobPosition,
+      monthlySalary,
+      jobType,
+      remoteOffice,
+      location,
+      jobDescription,
+      skillsRequired,
+      additionalInfo,
+    } = req.body;
 
     const jobPost = await Job.findByIdAndUpdate(jobId, {
       jobPosition,
@@ -166,70 +174,87 @@ app.put('/api/editjobpost/:id', isAuthenticated, async (req, res) => {
     });
 
     if (!jobPost) {
-      return res.status(404).json({ message: 'Job post not found' });
+      return res.status(404).json({ message: "Job post not found" });
     }
 
-    res.status(200).json({ message: 'Job post updated successfully' });
+    res.status(200).json({ message: "Job post updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Error updating job post', error });
+    res.status(500).json({ message: "Error updating job post", error });
   }
 });
 
-app.get('/api/showjobpost/:id', async (req, res) => {
+app.get("/api/showjobpost/:id", async (req, res) => {
   try {
     const jobId = req.params.id;
 
     const jobPost = await Job.findById(jobId);
 
     if (!jobPost) {
-      return res.status(404).json({ message: 'Job post not found' });
+      return res.status(404).json({ message: "Job post not found" });
     }
 
     res.status(200).json({ jobPost });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching job post details', error });
+    res.status(500).json({ message: "Error fetching job post details", error });
   }
 });
 
-app.get('/api/list-jobs', async (req, res) => {
+app.get("/api/list-jobs", async (req, res) => {
   try {
     const { skills, jobTitle } = req.query;
 
     let query = {};
 
     if (skills) {
-      query.skillsRequired = { $regex: new RegExp(skills, 'i') };
+      query.skillsRequired = { $regex: new RegExp(skills, "i") };
     }
 
     if (jobTitle) {
-      query.jobPosition = { $regex: new RegExp(jobTitle, 'i') };
+      query.jobPosition = { $regex: new RegExp(jobTitle, "i") };
     }
 
     const jobPosts = await Job.find(query);
 
     if (jobPosts.length === 0) {
-      return res.status(404).json({ message: 'No matching job posts found' });
+      return res.status(404).json({ message: "No matching job posts found" });
     }
 
     res.status(200).json({ jobPosts });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching job posts', error });
+    res.status(500).json({ message: "Error fetching job posts", error });
   }
 });
 
+// Error handling------------------------------------------------------------------
 
+app.use((req, res, next) => {
+  const err = new Error("Route not found");
+  err.status = 404;
+  next(err);
+});
+
+app.use((err, req, res, next) => {
+  res.status(err.status || 500);
+  res.send({
+    error: {
+      status: err.status || 500,
+      message: err.message,
+    },
+  });
+});
 
 // --------------------------------------------------------------------------------------------------------------
 
 app.listen(process.env.PORT, () => {
   mongoose
-    .connect(
-      `${process.env.MONGODB_URL}`,
-      {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      }
+    .connect(`${process.env.MONGODB_URL}`, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() =>
+      console.log(
+        `Connected to MongoDB and running on port ${process.env.PORT}`
+      )
     )
-    .then(() => console.log(`Connected to MongoDB and running on port ${process.env.PORT}`))
     .catch((error) => console.log(error));
 });
