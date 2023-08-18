@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const router = require("./routes/auth.js");
 
-// require("dotenv").config();
+require("dotenv").config();
 
 const app = express();
 
@@ -221,15 +221,15 @@ app.get('/api/list-jobs', async (req, res) => {
 
 // --------------------------------------------------------------------------------------------------------------
 
-app.listen(3000, () => {
+app.listen(process.env.PORT, () => {
   mongoose
     .connect(
-      "mongodb+srv://priyanshuqpwp:123@job-haven.3jrk3ny.mongodb.net/?retryWrites=true&w=majority",
+      `${process.env.MONGODB_URL}`,
       {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       }
     )
-    .then(() => console.log("Connected to MongoDB and running on port 3000"))
+    .then(() => console.log(`Connected to MongoDB and running on port ${process.env.PORT}`))
     .catch((error) => console.log(error));
 });
